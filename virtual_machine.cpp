@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "stack.h"
 #include "stack_func.cpp"
-#include <sys/stat.h>             //for what????????????????????????
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
 // -------------------------------------
@@ -16,6 +16,7 @@
 #define INCREASE_COMMAND 2
 #define MIN_MEMORY_SIZE 5
 #define MIN_BUFFER_SIZE 1000
+#define OPEN_FILE_FOR_REWRITING "a"
 // -------------------------------------
 
 // enums--------------------------------
@@ -34,7 +35,7 @@ enum PROG_CODE
 
 
 // functions----------------------------
-void destroy_veriables (FILE* error_file, int* execute_file, int* commands, Stack* memory);
+void destroy_variables (FILE* error_file, int* execute_file, int* commands, Stack* memory);
 // -------------------------------------
 // main()-------------------------------
 int main() //close files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -56,7 +57,7 @@ int main() //close files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // working area---------------------
     STACK_INIT(&memory, MIN_MEMORY_SIZE);
 
-    if ((error_file = fopen (ERROR_FILE, "w")) == NULL)
+    if ((error_file = fopen (ERROR_FILE, OPEN_FILE_FOR_REWRITING)) == NULL)
     {
         error_file = stderr;
         printf (ERROR_FILE " wasn't open -> errors'll printf to stderr");
@@ -174,7 +175,7 @@ int cnt_scanf = 0;
                 break;
 
             case HLT :
-                destroy_veriables (error_file, &execute_file, commands, &memory);
+                destroy_variables (error_file, &execute_file, commands, &memory);
                 return 0;
 
             case DUMP :
@@ -191,7 +192,7 @@ int cnt_scanf = 0;
         // printf ("next ID == %d\n", ID);
     }
 
-    destroy_veriables (error_file, &execute_file, commands, &memory);
+    destroy_variables (error_file, &execute_file, commands, &memory);
 
     return 0;
     // ----------------------------------
@@ -199,7 +200,7 @@ int cnt_scanf = 0;
 // --------------------------------------
 
 // functions-----------------------------
-void destroy_veriables (FILE* error_file, int* execute_file, int* commands, Stack* memory)
+void destroy_variables (FILE* error_file, int* execute_file, int* commands, Stack* memory)
 {
     fclose (error_file);
     close (*execute_file);
