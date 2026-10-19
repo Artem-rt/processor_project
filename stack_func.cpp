@@ -216,7 +216,7 @@ Error_Codes stack_clear (struct Stack* stack_i)
         assert (!error);
     )
 
-    for (int i = stack_i -> capacity -1 IF_ON_CANARY(- 1); i > stack_i -> capacity - 3 IF_ON_CANARY(- 1); i --)
+    for (int i = stack_i -> size -1; i > stack_i -> size - 3; i --)
     {
         stack_i -> data [i] = 0xDED;
     }
@@ -260,7 +260,7 @@ int sum_first_stack_elem (struct Stack* stack_i)
 
     for (int i = 0 IF_ON_CANARY (+ 1);
          i < stack_i -> capacity &&
-         stack_i -> data [i] != 0xDED
+         fabs(stack_i -> data [i] - 0xDED) > 0.00001
          IF_ON_CANARY (&& stack_i -> data [i] != CANARY_TWO);
          i ++)
     {
@@ -328,6 +328,36 @@ int div_first_stack_elem (struct Stack* stack_i)
     }
 
     return stack_i -> data [index_sum - 1] / stack_i -> data [index_sum];
+    // ----------------------------------------------------
+}
+
+int mull_first_stack_elem (struct Stack* stack_i)
+{
+    // variables and etc.----------------------------------
+    Error_Codes error = NO_ERROR;
+    int index_sum = 0;
+    // ----------------------------------------------------
+
+    // working area----------------------------------------
+    IF_ON_DEBAG(
+        error = stack_verifier (stack_i);
+        assert (!error);
+    )
+
+    IF_ON_CANARY (
+        index_sum ++ ;
+    )
+
+    for (int i = 0 IF_ON_CANARY (+ 1);
+         i < stack_i -> capacity &&
+         stack_i -> data [i] != 0xDED
+         IF_ON_CANARY (&& stack_i -> data [i] != CANARY_TWO);
+         i ++)
+    {
+        index_sum = i;
+    }
+
+    return stack_i -> data [index_sum - 1] * stack_i -> data [index_sum];
     // ----------------------------------------------------
 }
 
@@ -584,6 +614,3 @@ void stack_real_down_capacity (struct Stack* stack_i)
 #endif
 
 // THE END------------------------------------------------
-
-
-// TODO: перегрузка макроса по кол-ву аргументов

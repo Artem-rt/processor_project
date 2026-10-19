@@ -115,6 +115,7 @@ Error_Codes stack_clear (struct Stack* stack_i);
 int sum_first_stack_elem (struct Stack* stack_i);
 int unsum_first_stack_elem (struct Stack* stack_i);
 int div_first_stack_elem (struct Stack* stack_i);
+int mull_first_stack_elem (struct Stack* stack_i);
 
 IF_ON_DEBAG(
 Error_Codes stack_verifier (struct Stack* stack_i);

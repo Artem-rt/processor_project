@@ -2,60 +2,71 @@
 
 // useful libraries---------------------
 #include <stdio.h>
-#include "stack.h"
-#include "stack_func.cpp"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
+
+#include "stack.h"
+#include "stack_func.cpp"
+#include "commands.h"
 // -------------------------------------
 
 // useful macro-------------------------
 #define EXECUTABLE_FILE "EXECUTE.txt"
 #define ERROR_FILE "ERRORS_VM.log"
-#define START_COMMAND_SIZE 5
+// #define START_COMMAND_SIZE 5
 #define INCREASE_COMMAND 2
-#define MIN_MEMORY_SIZE 5
+#define MIN_MEMORY_SIZE 20
 #define MIN_BUFFER_SIZE 1000
 #define OPEN_FILE_FOR_REWRITING "a"
+#define MIN_CODE_LEN 1000
 // -------------------------------------
 
-// enums--------------------------------
-enum PROG_CODE
+// SPU_struct---------------------------
+struct SPU
 {
-    NO = 0,
-    PUSH = 1,
-    ADD = 2,
-    SUB= 3,
-    DIV = 4,
-    OUT = 5,
-    HLT = 6,
-    DUMP = 7,
+    double AX; //number 1
+    double BX; //number 2
+    double CX; //number 3
+    double DX; //number 4
+    int code [MIN_CODE_LEN];
+    int len_code;
+    int IP;
+    // ram;
+    // ret_call_cnt;
 } ;
 // -------------------------------------
 
 
 // functions----------------------------
-void destroy_variables (FILE* error_file, int* execute_file, int* commands, Stack* memory);
+void get_commands_from_file (char* buffer_commands, struct SPU*  VM);
+void run_programme (struct SPU* VM, struct Stack* vm_memory, FILE* error_file);
+void PUSH_decode (struct SPU* VM, struct Stack* vm_memory);
+void ADD_decode (struct SPU* VM, struct Stack* vm_memory);
+void SUB_decode (struct SPU* VM, struct Stack* vm_memory);
+void MULL_decode (struct SPU* VM, struct Stack* vm_memory);
+void DIV_decode (struct SPU* VM, struct Stack* vm_memory);
+void OUT_decode (struct SPU* VM, struct Stack* vm_memory);
+void DUMP_decode (struct SPU* VM, struct Stack* vm_memory, FILE* error_file);
+void JMP_decode (struct SPU* VM);
+void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory);
 // -------------------------------------
+
 // main()-------------------------------
-int main() //close files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+int main()
 {
     // variables && etc.----------------
+    struct stat file_size = { .st_size = 0 } ;
+    struct SPU VM = { } ;
+    Stack vm_memory = { } ;
     FILE* error_file = NULL;
     int execute_file = 0;
-    char* buffer_commands = NULL;
-    int* commands = NULL;
-    int ID = 0;
-    PROG_CODE operation_code = NO;
-    Stack memory = { } ;
-    int temp = 0xBEDA;
-    struct stat file_size = { .st_size = 0 } ;
-    int len_commands_array = START_COMMAND_SIZE;
-    Error_Codes er = NO_ERROR;
+    char buffer_commands [MIN_BUFFER_SIZE] = { };
+    int len_buffer_commands = 0;
     // ---------------------------------
 
     // working area---------------------
-    STACK_INIT(&memory, MIN_MEMORY_SIZE);
+    STACK_INIT(&vm_memory, MIN_MEMORY_SIZE);
 
     if ((error_file = fopen (ERROR_FILE, OPEN_FILE_FOR_REWRITING)) == NULL)
     {
@@ -70,142 +81,169 @@ int main() //close files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         abort();
     }
 
-    if ((buffer_commands = (char*)calloc(MIN_BUFFER_SIZE, sizeof(char))) == NULL)
-    {
-        fprintf (error_file, "buffer for commands didn't create, sorry...\nfile: %s, func: main.cpp: %d\n", __FILE__, __LINE__);
-        abort ();
-    }
-
     stat (EXECUTABLE_FILE, &file_size);
 
-    if ((len_commands_array = read (execute_file, buffer_commands, file_size.st_size)) == 0)
+    if ((len_buffer_commands = read (execute_file, buffer_commands, file_size.st_size)) == 0)
     {
         fprintf (error_file, "commands array didn't create, sorry...\nfile: %s, func: main.cpp: %d\n", __FILE__, __LINE__);
         abort ();
     }
 
-    buffer_commands [len_commands_array - 1] = '\0';
+    buffer_commands [len_buffer_commands - 1] = '\0';
 
-    if ((commands = (int*)calloc(len_commands_array, sizeof(int))) == NULL)
-    {
-        fprintf (error_file, "commands array didn't create, sorry...\nfile: %s, func: main.cpp: %d\n", __FILE__, __LINE__);
-        abort ();
-    }
-char* point_on_now_elem = buffer_commands;
-int cnt_scanf = 0;
+    get_commands_from_file (buffer_commands, &VM);
 
-    for (int i = 0; i < len_commands_array - 1;)
-    {
-        if (*point_on_now_elem == '\n' || *point_on_now_elem == '\r' || *point_on_now_elem == ' ')
-        {
-            point_on_now_elem ++;
-            continue;
-        } else if (*point_on_now_elem == '\0')
-        {
-            len_commands_array = i;
-            break;
-        } else if (*point_on_now_elem < '9' && *point_on_now_elem > '0')
-        {
-            sscanf (point_on_now_elem, "%d%n", &commands [i], &cnt_scanf);
-            if (cnt_scanf == 0)
-            {
-                // printf ("%d\n", i);
-                len_commands_array = i;
-                break;
-            }
-            // printf ("commands[%d] == %d\n", i, commands [i]);
-            point_on_now_elem += cnt_scanf;
-            i++;
-            continue;
-        } else
-        {
-            break;
-        }
+    run_programme (&VM, &vm_memory, error_file);
 
-    }
-
-    while (ID < len_commands_array)
-    {
-        operation_code = (PROG_CODE)commands[ID];   //7 бед - один ответ: костыль и велосипед :)
-        switch (operation_code)
-        {
-            case PUSH :
-                // printf ("push\n");
-                stack_push (&memory, commands [ID + 1]);
-                // STACK_DUMP(&memory, &er, error_file);
-                ID += 2;
-                break;
-
-            case ADD :
-                // printf ("add\n");
-                temp = sum_first_stack_elem (&memory);
-                // printf ("add_temp = %d\n", temp);
-                stack_clear (&memory);
-                stack_push (&memory, temp);
-                // STACK_DUMP(&memory, &er, error_file);
-                ID ++ ;
-                break;
-
-            case SUB :
-                // printf ("sub\n");
-                temp = unsum_first_stack_elem (&memory);
-                // printf ("sub_temp = %d\n", temp);
-                stack_clear (&memory);
-                stack_push (&memory, temp);
-                // STACK_DUMP(&memory, &er, error_file);
-                ID ++ ;
-                break;
-
-            case DIV :
-                // printf ("div\n");
-                temp = div_first_stack_elem (&memory);
-                // printf ("div_temp = %d\n", temp);
-                stack_clear (&memory);
-                stack_push (&memory, temp);
-                // STACK_DUMP(&memory, &er, error_file);
-                ID ++ ;
-                break;
-
-            case OUT :
-                // STACK_DUMP(&memory, &er, error_file);
-                stack_pop (&memory, &temp);
-                // printf ("out_temp = %d\n", temp);
-                printf ("result: %d\n", temp);
-                ID ++ ;
-                break;
-
-            case HLT :
-                destroy_variables (error_file, &execute_file, commands, &memory);
-                return 0;
-
-            case DUMP :
-                // printf ("dump\n");
-                STACK_DUMP(&memory, &er, error_file);
-                ID ++ ;
-                break;
-
-
-
-            default : printf ("default"); ID ++;
-                break;
-        }
-        // printf ("next ID == %d\n", ID);
-    }
-
-    destroy_variables (error_file, &execute_file, commands, &memory);
-
-    return 0;
-    // ----------------------------------
+    destroy_variables (error_file, &execute_file, &vm_memory);
 }
-// --------------------------------------
+// -------------------------------------
 
-// functions-----------------------------
-void destroy_variables (FILE* error_file, int* execute_file, int* commands, Stack* memory)
+// functions----------------------------
+void get_commands_from_file (char* buffer_commands, struct SPU* VM)
 {
+    for (int i = 0; buffer_commands [i] != '\0'; i++)
+    {
+        if (isdigit (buffer_commands [i]) || buffer_commands [i] == '-')
+        {
+            int temp_arg = 0;
+            int minus = 0;
+
+            if (buffer_commands [i] == '-')
+            {
+                i ++ ;
+                minus = 1;
+            }
+
+            while (buffer_commands [i] != '\n' && buffer_commands [i] != ';' && buffer_commands [i] != ' ')
+            {
+                temp_arg = 10 * temp_arg + (int)(buffer_commands [i] - '0');
+                (i) ++ ;
+            }
+
+            if (minus)
+                temp_arg = -1 * temp_arg;
+            VM -> code [VM -> len_code] = temp_arg;
+            VM -> len_code ++ ;
+        }
+    }
+}
+
+void run_programme (struct SPU* VM, struct Stack* vm_memory, FILE* error_file)
+{
+    int hlt_flag = 1;
+
+    while (VM -> IP < VM -> len_code && hlt_flag)
+    {
+        switch (VM -> code [VM -> IP])
+        {
+            case PUSH : PUSH_decode (VM, vm_memory);
+            break;
+
+            case ADD : ADD_decode (VM, vm_memory);
+            break;
+
+            case SUB : SUB_decode (VM, vm_memory);
+            break;
+
+            case MULL : MULL_decode (VM, vm_memory);
+            break;
+
+            case DIV : DIV_decode (VM, vm_memory);
+            break;
+
+            case OUT : OUT_decode (VM, vm_memory);
+            break;
+
+            case DUMP : DUMP_decode (VM, vm_memory, error_file);
+            break;
+
+            case JMP : JMP_decode (VM);
+            break;
+
+            case HLT : hlt_flag = 0;
+            break;
+
+            default : hlt_flag = 0;
+        }
+    }
+}
+
+void PUSH_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    VM -> IP ++ ;
+    stack_push (vm_memory, VM -> code [VM -> IP]);
+    VM -> IP ++ ;
+}
+
+void ADD_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    int temp = sum_first_stack_elem (vm_memory);
+    printf ("add temp == %d", temp);
+    stack_clear (vm_memory);
+    stack_push (vm_memory, temp);
+
+    VM -> IP ++ ;
+}
+
+void SUB_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    int temp = unsum_first_stack_elem (vm_memory);
+    stack_clear (vm_memory);
+    stack_push (vm_memory, temp);
+
+    VM -> IP ++ ;
+}
+
+void MULL_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    int temp = mull_first_stack_elem (vm_memory);
+    stack_clear (vm_memory);
+    stack_push (vm_memory, temp);
+
+    VM -> IP ++ ;
+}
+
+void DIV_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    int temp = div_first_stack_elem (vm_memory);
+    stack_clear (vm_memory);
+    stack_push (vm_memory, temp);
+
+    VM -> IP ++ ;
+}
+
+void OUT_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM temp = 0xBEDA;
+    stack_pop (vm_memory, &temp);
+    printf (GREEN_START "result of OUT: " COLOR_STOP SPECIFICATOR_TYPE, temp);
+
+    VM -> IP ++ ;
+}
+
+void DUMP_decode (struct SPU* VM, struct Stack* vm_memory, FILE* error_file)
+{
+    Error_Codes error_unused = NO_ERROR;
+    STACK_DUMP (vm_memory, &error_unused, error_file);
+
+    VM -> IP ++ ;
+}
+
+void JMP_decode (struct SPU* VM)
+{
+    VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory)
+{
+    assert (error_file);
+    assert (execute_file);
+    assert (vm_memory);
+
     fclose (error_file);
     close (*execute_file);
-    free (commands);
-    stack_destroy (memory);
+    stack_destroy (vm_memory);
 }
 // -------------------------------------
 
