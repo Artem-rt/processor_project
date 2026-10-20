@@ -8,7 +8,7 @@
 // enum -- commands codes-------
 enum PROG_CODE
 {
-    NON = 0,
+    NO = 0,
     PUSH = 1,
     PUSH_ARG = 2,
     POP = 3,

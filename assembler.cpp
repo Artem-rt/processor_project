@@ -219,7 +219,13 @@ int assembly (char* buffer_commands, long long* len_buffer_commands, int* code, 
                 continue ;
             }
 
-            if (!strcmp (now_command, "JMP"))
+            if (!strcmp (now_command, "JMP") ||
+                !strcmp (now_command, "JA") ||
+                !strcmp (now_command, "JAE") ||
+                !strcmp (now_command, "JB") ||
+                !strcmp (now_command, "JBE") ||
+                !strcmp (now_command, "JE") ||
+                !strcmp (now_command, "JNE"))
             {
                 JMP_decode (buffer_commands, &i, now_command, &len_now_command, code, &code_elem, error_file, label);
                 continue;
@@ -360,7 +366,27 @@ void JMP_decode (char *buffer_commands, long long* i, char* now_command, int* le
 
     (*i) ++ ;
 
-    code [*code_elem] = (int)JMP;
+    if (!strcmp (now_command, "JMP"))
+        code [*code_elem] = (int)JMP;
+
+    if (!strcmp (now_command, "JA"))
+        code [*code_elem] = (int)JA;
+
+    if (!strcmp (now_command, "JAE"))
+        code [*code_elem] = (int)JAE;
+
+    if (!strcmp (now_command, "JB"))
+        code [*code_elem] = (int)JB;
+
+    if (!strcmp (now_command, "JE"))
+        code [*code_elem] = (int)JE;
+
+    if (!strcmp (now_command, "JBE"))
+        code [*code_elem] = (int)JBE;
+
+    if (!strcmp (now_command, "JNE"))
+        code [*code_elem] = (int)JNE;
+
     (*code_elem) ++ ;
 
     if (buffer_commands [*i] == ':')
@@ -436,7 +462,13 @@ void twice_assembly (char* buffer_commands, int* code, int len_code, int* label)
 
         for (int j = seek_jmp; j < len_code; j ++)
         {
-            if (fabs(code [j] - (int)JMP) < 0.000001)
+            if (fabs(code [j] - (int)JMP) < 0.000001 ||
+                fabs(code [j] - (int)JA) < 0.000001 ||
+                fabs(code [j] - (int)JAE) < 0.000001 ||
+                fabs(code [j] - (int)JB) < 0.000001 ||
+                fabs(code [j] - (int)JBE) < 0.000001 ||
+                fabs(code [j] - (int)JE) < 0.000001 ||
+                fabs(code [j] - (int)JNE) < 0.000001)
             {
                 seek_jmp = j;
                 break;
@@ -519,7 +551,14 @@ void create_execute_file (int* code, int len_code, FILE* error_file)
     for (int i = 0; i < len_code; i ++)
     {
         fprintf (execute_file, "%d", code [i]);
-        if (code [i] == PUSH || code [i] == JMP)
+        if (code [i] == PUSH ||
+            code [i] == JMP ||
+            code [i] == JA ||
+            code [i] == JAE ||
+            code [i] == JB ||
+            code [i] == JBE ||
+            code [i] == JE ||
+            code [i] == JNE)
         {
             i ++ ;
             fprintf (execute_file, " %d\n", code [i]);

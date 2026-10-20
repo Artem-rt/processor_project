@@ -49,6 +49,12 @@ void DIV_decode (struct SPU* VM, struct Stack* vm_memory);
 void OUT_decode (struct SPU* VM, struct Stack* vm_memory);
 void DUMP_decode (struct SPU* VM, struct Stack* vm_memory, FILE* error_file);
 void JMP_decode (struct SPU* VM);
+void JA_decode (struct SPU* VM, struct Stack* vm_memory);
+void JAE_decode (struct SPU* VM, struct Stack* vm_memory);
+void JB_decode (struct SPU* VM, struct Stack* vm_memory);
+void JBE_decode (struct SPU* VM, struct Stack* vm_memory);
+void JE_decode (struct SPU* VM, struct Stack* vm_memory);
+void JNE_decode (struct SPU* VM, struct Stack* vm_memory);
 void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory);
 // -------------------------------------
 
@@ -161,6 +167,24 @@ void run_programme (struct SPU* VM, struct Stack* vm_memory, FILE* error_file)
             case JMP : JMP_decode (VM);
             break;
 
+            case JA : JA_decode (VM, vm_memory);
+            break;
+
+            case JAE : JAE_decode (VM, vm_memory);
+            break;
+
+            case JB : JB_decode (VM, vm_memory);
+            break;
+
+            case JBE : JBE_decode (VM, vm_memory);
+            break;
+
+            case JE : JE_decode (VM, vm_memory);
+            break;
+
+            case JNE : JNE_decode (VM, vm_memory);
+            break;
+
             case HLT : hlt_flag = 0;
             break;
 
@@ -233,6 +257,72 @@ void DUMP_decode (struct SPU* VM, struct Stack* vm_memory, FILE* error_file)
 void JMP_decode (struct SPU* VM)
 {
     VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JA_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = 0, b = 0;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a > b)
+        VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JAE_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = 0, b = 1;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a >= b)
+        VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JB_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = 0, b = 0;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a < b)
+        VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JBE_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = 1, b = 0;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a <= b)
+        VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JE_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = -1, b = 0;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a == b)
+        VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void JNE_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM a = 0, b = 0;
+
+    stack_pop (vm_memory, &a);
+    stack_pop (vm_memory, &b);
+
+    if (a != b)
+        VM -> IP = VM -> code [VM -> IP + 1];
 }
 
 void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory)

@@ -1,8 +1,10 @@
-PUSH 20
+PUSH 10
 PUSH 30; something
+:2
 ADD
 PUSH 8
 PUSH 3
+JA :2
 SUB
 DIV
 OUT
