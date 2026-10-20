@@ -55,6 +55,7 @@ void JB_decode (struct SPU* VM, struct Stack* vm_memory);
 void JBE_decode (struct SPU* VM, struct Stack* vm_memory);
 void JE_decode (struct SPU* VM, struct Stack* vm_memory);
 void JNE_decode (struct SPU* VM, struct Stack* vm_memory);
+void IN_decode (struct SPU* VM, struct Stack* vm_memory);
 void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory);
 // -------------------------------------
 
@@ -183,6 +184,9 @@ void run_programme (struct SPU* VM, struct Stack* vm_memory, FILE* error_file)
             break;
 
             case JNE : JNE_decode (VM, vm_memory);
+            break;
+
+            case IN : IN_decode (VM, vm_memory);
             break;
 
             case HLT : hlt_flag = 0;
@@ -323,6 +327,16 @@ void JNE_decode (struct SPU* VM, struct Stack* vm_memory)
 
     if (a != b)
         VM -> IP = VM -> code [VM -> IP + 1];
+}
+
+void IN_decode (struct SPU* VM, struct Stack* vm_memory)
+{
+    TYPE_OF_STACK_ELEM temp;
+    scanf (SPECIFICATOR_TYPE, &temp);
+
+    stack_push (vm_memory, temp);
+
+    VM -> IP ++ ;
 }
 
 void destroy_variables (FILE* error_file, int* execute_file, Stack* vm_memory)

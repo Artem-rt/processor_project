@@ -24,7 +24,7 @@
 #define MAX_COMMAND_LEN 1000
 #define MIN_CODE_LEN 1000
 #define LABEL_CNT 20
-#define NO_ARG_COMMANDS_CNT 7
+#define NO_ARG_COMMANDS_CNT 8
 // ------------------------------
 
 // struct------------------------
@@ -504,7 +504,7 @@ PROG_CODE decode_command (char* now_command) //TODO - мини структур�
 {
     struct NO_ARG_COMMANDS commands =
     {
-        .cnt = 7,
+        .cnt = NO_ARG_COMMANDS_CNT,
         .names =
                 {
                     "ADD",
@@ -513,7 +513,8 @@ PROG_CODE decode_command (char* now_command) //TODO - мини структур�
                     "DIV",
                     "OUT",
                     "HLT",
-                    "DUMP"
+                    "DUMP",
+                    "IN",
                 } ,
         .command_enum =
                 {
@@ -523,7 +524,8 @@ PROG_CODE decode_command (char* now_command) //TODO - мини структур�
                     DIV,
                     OUT,
                     HLT,
-                    DUMP
+                    DUMP,
+                    IN
                 }
     } ;
 
